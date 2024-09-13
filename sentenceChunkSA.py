@@ -2,13 +2,13 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-from narrative_story_3 import texts
+from nltk.tokenize import sent_tokenize
+import pandas as pd 
+from narrative_story_1 import texts
 
-# Load the tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("joeddav/distilbert-base-uncased-go-emotions-student")
 model = AutoModelForSequenceClassification.from_pretrained("joeddav/distilbert-base-uncased-go-emotions-student")
 
-# Define the emotions
 emotions = [
     "admiration", "amusement", "anger", "annoyance", "approval", "caring", "confusion", "curiosity",
     "desire", "disappointment", "disapproval", "disgust", "embarrassment", "excitement", "fear",
@@ -16,33 +16,63 @@ emotions = [
     "relief", "remorse", "sadness", "surprise"
 ]
 
-def analyze_text(text):
-    # Tokenize the combined text
+
+def analyze_chunk(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     
-    # Perform emotion detection
     outputs = model(**inputs)
     
-    # Get the logits
-    logits = outputs.logits
+    probabilities = torch.sigmoid(outputs.logits).detach().numpy()[0]
     
-    # Apply sigmoid to get probabilities
-    probabilities = torch.sigmoid(logits).detach().numpy()[0]
+    # Slice to match the 27 emotions
+    probabilities = probabilities[:27]
     
-    # Ignore the extra logit
-    probabilities = probabilities[:27]  # Slice to match the 27 emotions
-    
-    # Return probabilities for analysis
     return probabilities
 
-# Analyze texts in parallel
-with ThreadPoolExecutor() as executor:
-    results = list(executor.map(analyze_text, texts))
 
-# Calculate mean and standard deviation for each emotion
-mean_probs = np.mean(results, axis=0)
-std_probs = np.std(results, axis=0)
+all_chunk_probabilities = []
+chunk_results_store = []
 
-# Print results
-for i, emotion in enumerate(emotions):
-    print(f"{emotion}: Mean = {mean_probs[i]:.4f}, Std Dev = {std_probs[i]:.4f}")
+def analyze_text_chunks(text):
+    chunks = sent_tokenize(text)
+    
+    with ThreadPoolExecutor() as executor:
+        chunk_results = list(executor.map(analyze_chunk, chunks))
+    
+    for i, chunk in enumerate(chunks):
+        chunk_result = chunk_results[i]
+        chunk_results_store.append({
+            "sentence": chunk,
+            **{emotion: chunk_result[j] for j, emotion in enumerate(emotions)}
+        })
+
+
+
+# Analyze all texts
+for text in texts:
+    analyze_text_chunks(text)
+
+# Convert results into a DataFrame
+df = pd.DataFrame(chunk_results_store)
+
+# Save the DataFrame to an Excel file
+excel_file = "sentiment_analysis_results.xlsx"
+df.to_excel(excel_file, index=False)
+
+print(f"Results saved to {excel_file}")
+
+all_chunk_probabilities = np.array([list(result.values())[1:] for result in chunk_results_store])
+
+mean_probs = np.mean(all_chunk_probabilities, axis=0)
+std_probs = np.std(all_chunk_probabilities, axis=0)
+
+statistics_df = pd.DataFrame({
+    "Emotion": emotions,
+    "Mean": mean_probs,
+    "Standard Deviation": std_probs
+})
+
+with pd.ExcelWriter(excel_file, mode="a", engine="openpyxl") as writer:
+    statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
+
+print(f"Mean and Standard Deviation saved to the 'Statistics' sheet in {excel_file}")
