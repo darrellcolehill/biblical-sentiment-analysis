@@ -1,5 +1,8 @@
+import numpy as np
+import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
+from nltk.tokenize import sent_tokenize
 
 # Load the tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("joeddav/distilbert-base-uncased-go-emotions-student")
@@ -34,55 +37,66 @@ Jesus continued: “There was a man who had two sons. The younger one said to 
 """
 
 
-text = legacy_standard_bible
+text = fathers_pov
 
-sentences = [s.strip() for s in text.split('.') if s.strip()]
-print(sentences)
+chunks = sent_tokenize(text)
 
-emotion_prop_avg_acc = [0] * 27
+# Create a DataFrame to store the results for each chunk
+chunk_data = {
+    "Chunk": [],
+    **{emotion: [] for emotion in emotions},
+}
 
-for i in range(len(sentences)):
+# Store all chunk probabilities for later mean and std calculation
+all_chunk_probabilities = []
 
-    if i < len(sentences) - 1:
-        sentence = sentences[i] + " " + sentences[i + 1]
+# Analyze each sentence chunk
+for i in range(len(chunks)):
+    if i < len(chunks) - 1:
+        sentence = chunks[i] + " " + chunks[i + 1]
     else:
         break
 
     print(f'Working on sentence: {sentence}')
     
-    # Tokenize the input text
     inputs = tokenizer(sentence, return_tensors="pt")
 
-    # Perform emotion detection
     outputs = model(**inputs)
 
-    # Get the logits
     logits = outputs.logits
-
-    # Print the shape of the logits
-    print(f"Logits shape: {logits.shape}")
 
     # Apply sigmoid to get probabilities
     probabilities = torch.sigmoid(logits).detach().numpy()[0]
 
-    # Ignore the extra logit
     probabilities = probabilities[:27]  # Slice to match the 27 emotions
 
+    all_chunk_probabilities.append(probabilities)
+
+    # Store the chunk text and corresponding probabilities in the chunk_data dictionary
+    chunk_data["Chunk"].append(sentence)
     for j in range(len(probabilities)):
-        emotion_prop_avg_acc[j] += probabilities[j]
+        chunk_data[emotions[j]].append(probabilities[j])
 
-    # Get the predicted emotions with probabilities for all emotions
-    predicted_emotions = [(emotions[i], probabilities[i]) for i in range(len(probabilities))]
-
-    # Print the results
     print(f"Window: {i} and {i + 1}")
-    print("Predicted Emotions and Probabilities:")
-    for emotion, prob in predicted_emotions:
+    for emotion, prob in zip(emotions, probabilities):
         print(f"  {emotion}: {prob:.4f}")
 
-for i in range(len(emotion_prop_avg_acc)):
-    emotion_prop_avg_acc[i] = emotion_prop_avg_acc[i] / len(sentences)
-    print(f"{emotions[i]} {emotion_prop_avg_acc[i]}")
+df_chunks = pd.DataFrame(chunk_data)
 
+all_chunk_probabilities = np.array(all_chunk_probabilities)
 
+mean_probs = np.mean(all_chunk_probabilities, axis=0)
+std_probs = np.std(all_chunk_probabilities, axis=0)
+
+df_summary = pd.DataFrame({
+    "Emotion": emotions,
+    "Mean Probability": mean_probs,
+    "Standard Deviation": std_probs
+})
+
+with pd.ExcelWriter("emotion_analysis_updated.xlsx") as writer:
+    df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
+    df_summary.to_excel(writer, sheet_name="Summary", index=False)
+
+print("Results saved to 'emotion_analysis_updated.xlsx'")
 
