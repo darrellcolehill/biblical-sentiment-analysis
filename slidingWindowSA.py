@@ -39,13 +39,6 @@ text = legacy_standard_bible
 sentences = [s.strip() for s in text.split('.') if s.strip()]
 print(sentences)
 
-# A, B, C D, E, F
-
-# AB
-# BC
-# CD
-# DE
-
 emotion_prop_avg_acc = [0] * 27
 
 for i in range(len(sentences)):
@@ -78,10 +71,6 @@ for i in range(len(sentences)):
     for j in range(len(probabilities)):
         emotion_prop_avg_acc[j] += probabilities[j]
 
-    # Debugging: Print lengths to ensure consistency
-    print(f"Length of emotions: {len(emotions)}")
-    print(f"Length of probabilities: {len(probabilities)}")
-
     # Get the predicted emotions with probabilities for all emotions
     predicted_emotions = [(emotions[i], probabilities[i]) for i in range(len(probabilities))]
 
@@ -94,9 +83,6 @@ for i in range(len(sentences)):
 for i in range(len(emotion_prop_avg_acc)):
     emotion_prop_avg_acc[i] = emotion_prop_avg_acc[i] / len(sentences)
     print(f"{emotions[i]} {emotion_prop_avg_acc[i]}")
-
-
-# %%
 
 
 
