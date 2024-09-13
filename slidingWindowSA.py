@@ -37,16 +37,6 @@ Jesus continued: “There was a man who had two sons. The younger one said to 
 """
 
 
-
-def analyze_chunk(chunk_text):
-    inputs = tokenizer(chunk_text, return_tensors="pt")
-    outputs = model(**inputs)
-    logits = outputs.logits
-    # Slice to match the 27 emotions
-    probabilities = torch.sigmoid(logits).detach().numpy()[0][:27]  
-    return probabilities
-
-
 def analyze_text(text):
     chunks = sent_tokenize(text)
 
@@ -71,6 +61,24 @@ def analyze_text(text):
     return df_chunks
 
 
+def analyze_chunk(chunk_text):
+    inputs = tokenizer(chunk_text, return_tensors="pt")
+    outputs = model(**inputs)
+    logits = outputs.logits
+    # Slice to match the 27 emotions
+    probabilities = torch.sigmoid(logits).detach().numpy()[0][:27]  
+    return probabilities
+
+
+def save_to_excel(df, filename="emotion_analysis_sliding_window.xlsx"):
+    df_summary = calculate_summary_statistics(df)
+
+    with pd.ExcelWriter(filename) as writer:
+        df.to_excel(writer, sheet_name="Chunks", index=False)
+        df_summary.to_excel(writer, sheet_name="Summary", index=False)
+    print(f"Results saved to '{filename}'")
+
+
 def calculate_summary_statistics(df):
     summary_data = {
         "Emotion": emotions,
@@ -87,15 +95,6 @@ def calculate_summary_statistics(df):
 
     df_summary = pd.DataFrame(summary_data)
     return df_summary
-
-
-def save_to_excel(df, filename="emotion_analysis_sliding_window.xlsx"):
-    df_summary = calculate_summary_statistics(df)
-
-    with pd.ExcelWriter(filename) as writer:
-        df.to_excel(writer, sheet_name="Chunks", index=False)
-        df_summary.to_excel(writer, sheet_name="Summary", index=False)
-    print(f"Results saved to '{filename}'")
 
 
 text = fathers_pov

@@ -17,15 +17,6 @@ emotions = [
 ]
 
 
-def analyze_chunk(chunk_text):
-    inputs = tokenizer(chunk_text, return_tensors="pt", truncation=True, padding=True)
-    outputs = model(**inputs)
-    probabilities = torch.sigmoid(outputs.logits).detach().numpy()[0]
-    # Slice to match the 27 emotions
-    probabilities = probabilities[:27]
-    return probabilities
-
-
 def analyze_text(text):
     chunk_data = []
 
@@ -42,6 +33,15 @@ def analyze_text(text):
         })
 
     return pd.DataFrame(chunk_data)
+
+
+def analyze_chunk(chunk_text):
+    inputs = tokenizer(chunk_text, return_tensors="pt", truncation=True, padding=True)
+    outputs = model(**inputs)
+    probabilities = torch.sigmoid(outputs.logits).detach().numpy()[0]
+    # Slice to match the 27 emotions
+    probabilities = probabilities[:27]
+    return probabilities
 
 
 def save_to_excel(df, filename="emotion_analysis_sentence_chunk.xlsx"):
