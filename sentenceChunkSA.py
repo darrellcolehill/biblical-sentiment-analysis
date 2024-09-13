@@ -30,10 +30,9 @@ def analyze_chunk(text):
     return probabilities
 
 
-all_chunk_probabilities = []
-chunk_results_store = []
-
 def analyze_text_chunks(text):
+    chunk_results_store = []
+
     chunks = sent_tokenize(text)
     
     with ThreadPoolExecutor() as executor:
@@ -46,33 +45,39 @@ def analyze_text_chunks(text):
             **{emotion: chunk_result[j] for j, emotion in enumerate(emotions)}
         })
 
+    return chunk_results_store
 
 
-# Analyze all texts
+def save_to_excel(chunk_results):
+
+    df = pd.DataFrame(chunk_results)
+
+    excel_file = "sentiment_analysis_results.xlsx"
+    df.to_excel(excel_file, index=False)
+    print(f"Results saved to {excel_file}")
+
+    all_chunk_probabilities = np.array([list(result.values())[1:] for result in chunk_results])
+
+    mean_probs = np.mean(all_chunk_probabilities, axis=0)
+    std_probs = np.std(all_chunk_probabilities, axis=0)
+
+    statistics_df = pd.DataFrame({
+        "Emotion": emotions,
+        "Mean": mean_probs,
+        "Standard Deviation": std_probs
+    })
+
+    with pd.ExcelWriter(excel_file, mode="a", engine="openpyxl") as writer:
+        statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
+
+    print(f"Mean and Standard Deviation saved to the 'Statistics' sheet in {excel_file}")
+
+
+
+results_acc = []
 for text in texts:
-    analyze_text_chunks(text)
+    chunk_results_store = analyze_text_chunks(texts[0])
+    for result in chunk_results_store:
+        results_acc.append(result)
 
-# Convert results into a DataFrame
-df = pd.DataFrame(chunk_results_store)
-
-# Save the DataFrame to an Excel file
-excel_file = "sentiment_analysis_results.xlsx"
-df.to_excel(excel_file, index=False)
-
-print(f"Results saved to {excel_file}")
-
-all_chunk_probabilities = np.array([list(result.values())[1:] for result in chunk_results_store])
-
-mean_probs = np.mean(all_chunk_probabilities, axis=0)
-std_probs = np.std(all_chunk_probabilities, axis=0)
-
-statistics_df = pd.DataFrame({
-    "Emotion": emotions,
-    "Mean": mean_probs,
-    "Standard Deviation": std_probs
-})
-
-with pd.ExcelWriter(excel_file, mode="a", engine="openpyxl") as writer:
-    statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
-
-print(f"Mean and Standard Deviation saved to the 'Statistics' sheet in {excel_file}")
+save_to_excel(results_acc)
