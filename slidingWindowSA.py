@@ -74,7 +74,7 @@ def process_chunks(text):
 
 
 # Function to calculate mean and standard deviation from the DataFrame
-def calculate_statistics_from_df(df_chunks):
+def calculate_summary_statistics(df_chunks):
     summary_data = {
         "Emotion": emotions,
         "Mean Probability": [],
@@ -94,7 +94,7 @@ def calculate_statistics_from_df(df_chunks):
 
 # Function to save the results to an Excel file
 def save_to_excel(df_chunks, filename="emotion_analysis_updated.xlsx"):
-    df_summary = calculate_statistics_from_df(df_chunks)
+    df_summary = calculate_summary_statistics(df_chunks)
 
     with pd.ExcelWriter(filename) as writer:
         df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
