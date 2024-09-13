@@ -38,19 +38,18 @@ Jesus continued: “There was a man who had two sons. The younger one said to 
 
 
 
-# Function to analyze a sentence chunk
-def analyze_chunk(sentence):
-    inputs = tokenizer(sentence, return_tensors="pt")
+def analyze_chunk(chunk_text):
+    inputs = tokenizer(chunk_text, return_tensors="pt")
     outputs = model(**inputs)
     logits = outputs.logits
-    probabilities = torch.sigmoid(logits).detach().numpy()[0][:27]  # Slice to match the 27 emotions
+    # Slice to match the 27 emotions
+    probabilities = torch.sigmoid(logits).detach().numpy()[0][:27]  
     return probabilities
 
-# Function to process chunks of text
-def process_chunks(text):
+
+def analyze_text(text):
     chunks = sent_tokenize(text)
 
-    # Create a DataFrame to store the results for each chunk
     chunk_data = {
         "Chunk": [],
         **{emotion: [] for emotion in emotions},
@@ -64,7 +63,6 @@ def process_chunks(text):
 
         probabilities = analyze_chunk(sentence)
 
-        # Store the chunk text and corresponding probabilities in the chunk_data dictionary
         chunk_data["Chunk"].append(sentence)
         for j in range(len(probabilities)):
             chunk_data[emotions[j]].append(probabilities[j])
@@ -73,8 +71,7 @@ def process_chunks(text):
     return df_chunks
 
 
-# Function to calculate mean and standard deviation from the DataFrame
-def calculate_summary_statistics(df_chunks):
+def calculate_summary_statistics(df):
     summary_data = {
         "Emotion": emotions,
         "Mean Probability": [],
@@ -82,8 +79,8 @@ def calculate_summary_statistics(df_chunks):
     }
 
     for emotion in emotions:
-        mean_prob = df_chunks[emotion].mean()
-        std_prob = df_chunks[emotion].std()
+        mean_prob = df[emotion].mean()
+        std_prob = df[emotion].std()
 
         summary_data["Mean Probability"].append(mean_prob)
         summary_data["Standard Deviation"].append(std_prob)
@@ -92,22 +89,15 @@ def calculate_summary_statistics(df_chunks):
     return df_summary
 
 
-# Function to save the results to an Excel file
-def save_to_excel(df_chunks, filename="emotion_analysis_updated.xlsx"):
-    df_summary = calculate_summary_statistics(df_chunks)
+def save_to_excel(df, filename="emotion_analysis_sliding_window.xlsx"):
+    df_summary = calculate_summary_statistics(df)
 
     with pd.ExcelWriter(filename) as writer:
-        df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
+        df.to_excel(writer, sheet_name="Chunks", index=False)
         df_summary.to_excel(writer, sheet_name="Summary", index=False)
     print(f"Results saved to '{filename}'")
 
 
-# Main function to run the analysis
-def run_emotion_analysis(text):
-    df_chunks = process_chunks(text)
-    save_to_excel(df_chunks)
-
-
-# Run analysis on the selected text
 text = fathers_pov
-run_emotion_analysis(text)
+df = analyze_text(text)
+save_to_excel(df)

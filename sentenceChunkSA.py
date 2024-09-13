@@ -17,21 +17,17 @@ emotions = [
 ]
 
 
-def analyze_chunk(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    
+def analyze_chunk(chunk_text):
+    inputs = tokenizer(chunk_text, return_tensors="pt", truncation=True, padding=True)
     outputs = model(**inputs)
-    
     probabilities = torch.sigmoid(outputs.logits).detach().numpy()[0]
-    
     # Slice to match the 27 emotions
     probabilities = probabilities[:27]
-    
     return probabilities
 
 
-def analyze_text_chunks(text):
-    chunk_results_store = []
+def analyze_text(text):
+    chunk_data = []
 
     chunks = sent_tokenize(text)
     
@@ -40,31 +36,25 @@ def analyze_text_chunks(text):
     
     for i, chunk in enumerate(chunks):
         chunk_result = chunk_results[i]
-        chunk_results_store.append({
+        chunk_data.append({
             "sentence": chunk,
             **{emotion: chunk_result[j] for j, emotion in enumerate(emotions)}
         })
 
-    return chunk_results_store
+    return pd.DataFrame(chunk_data)
 
 
-def save_to_excel(chunk_results):
-
-    df = pd.DataFrame(chunk_results)
-
-    excel_file = "sentiment_analysis_results.xlsx"
-    df.to_excel(excel_file, index=False)
-    print(f"Results saved to {excel_file}")
+def save_to_excel(df, filename="emotion_analysis_sentence_chunk.xlsx"):
+    df.to_excel(filename, index=False)
 
     statistics_df = calculate_summary_statistics(df)
 
-    with pd.ExcelWriter(excel_file, mode="a", engine="openpyxl") as writer:
+    with pd.ExcelWriter(filename, mode="a", engine="openpyxl") as writer:
         statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
+    print(f"Results saved to '{filename}'")
 
-    print(f"Mean and Standard Deviation saved to the 'Statistics' sheet in {excel_file}")
 
-
-def calculate_summary_statistics(df_chunks):
+def calculate_summary_statistics(df):
     summary_data = {
         "Emotion": emotions,
         "Mean Probability": [],
@@ -72,8 +62,8 @@ def calculate_summary_statistics(df_chunks):
     }
 
     for emotion in emotions:
-        mean_prob = df_chunks[emotion].mean()
-        std_prob = df_chunks[emotion].std()
+        mean_prob = df[emotion].mean()
+        std_prob = df[emotion].std()
 
         summary_data["Mean Probability"].append(mean_prob)
         summary_data["Standard Deviation"].append(std_prob)
@@ -82,10 +72,5 @@ def calculate_summary_statistics(df_chunks):
     return df_summary
 
 
-results_acc = []
-for text in texts:
-    chunk_results_store = analyze_text_chunks(texts[0])
-    for result in chunk_results_store:
-        results_acc.append(result)
-
-save_to_excel(results_acc)
+data = analyze_text(texts[0])
+save_to_excel(data)
