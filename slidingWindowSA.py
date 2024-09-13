@@ -37,66 +37,77 @@ Jesus continued: “There was a man who had two sons. The younger one said to 
 """
 
 
-text = fathers_pov
 
-chunks = sent_tokenize(text)
-
-# Create a DataFrame to store the results for each chunk
-chunk_data = {
-    "Chunk": [],
-    **{emotion: [] for emotion in emotions},
-}
-
-# Store all chunk probabilities for later mean and std calculation
-all_chunk_probabilities = []
-
-# Analyze each sentence chunk
-for i in range(len(chunks)):
-    if i < len(chunks) - 1:
-        sentence = chunks[i] + " " + chunks[i + 1]
-    else:
-        break
-
-    print(f'Working on sentence: {sentence}')
-    
+# Function to analyze a sentence chunk
+def analyze_chunk(sentence):
     inputs = tokenizer(sentence, return_tensors="pt")
-
     outputs = model(**inputs)
-
     logits = outputs.logits
+    probabilities = torch.sigmoid(logits).detach().numpy()[0][:27]  # Slice to match the 27 emotions
+    return probabilities
 
-    # Apply sigmoid to get probabilities
-    probabilities = torch.sigmoid(logits).detach().numpy()[0]
+# Function to process chunks of text
+def process_chunks(text):
+    chunks = sent_tokenize(text)
 
-    probabilities = probabilities[:27]  # Slice to match the 27 emotions
+    # Create a DataFrame to store the results for each chunk
+    chunk_data = {
+        "Chunk": [],
+        **{emotion: [] for emotion in emotions},
+    }
 
-    all_chunk_probabilities.append(probabilities)
+    for i in range(len(chunks)):
+        if i < len(chunks) - 1:
+            sentence = chunks[i] + " " + chunks[i + 1]
+        else:
+            break
 
-    # Store the chunk text and corresponding probabilities in the chunk_data dictionary
-    chunk_data["Chunk"].append(sentence)
-    for j in range(len(probabilities)):
-        chunk_data[emotions[j]].append(probabilities[j])
+        probabilities = analyze_chunk(sentence)
 
-    print(f"Window: {i} and {i + 1}")
-    for emotion, prob in zip(emotions, probabilities):
-        print(f"  {emotion}: {prob:.4f}")
+        # Store the chunk text and corresponding probabilities in the chunk_data dictionary
+        chunk_data["Chunk"].append(sentence)
+        for j in range(len(probabilities)):
+            chunk_data[emotions[j]].append(probabilities[j])
 
-df_chunks = pd.DataFrame(chunk_data)
+    df_chunks = pd.DataFrame(chunk_data)
+    return df_chunks
 
-all_chunk_probabilities = np.array(all_chunk_probabilities)
 
-mean_probs = np.mean(all_chunk_probabilities, axis=0)
-std_probs = np.std(all_chunk_probabilities, axis=0)
+# Function to calculate mean and standard deviation from the DataFrame
+def calculate_statistics_from_df(df_chunks):
+    summary_data = {
+        "Emotion": emotions,
+        "Mean Probability": [],
+        "Standard Deviation": []
+    }
 
-df_summary = pd.DataFrame({
-    "Emotion": emotions,
-    "Mean Probability": mean_probs,
-    "Standard Deviation": std_probs
-})
+    for emotion in emotions:
+        mean_prob = df_chunks[emotion].mean()
+        std_prob = df_chunks[emotion].std()
 
-with pd.ExcelWriter("emotion_analysis_updated.xlsx") as writer:
-    df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
-    df_summary.to_excel(writer, sheet_name="Summary", index=False)
+        summary_data["Mean Probability"].append(mean_prob)
+        summary_data["Standard Deviation"].append(std_prob)
 
-print("Results saved to 'emotion_analysis_updated.xlsx'")
+    df_summary = pd.DataFrame(summary_data)
+    return df_summary
 
+
+# Function to save the results to an Excel file
+def save_to_excel(df_chunks, filename="emotion_analysis_updated.xlsx"):
+    df_summary = calculate_statistics_from_df(df_chunks)
+
+    with pd.ExcelWriter(filename) as writer:
+        df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
+        df_summary.to_excel(writer, sheet_name="Summary", index=False)
+    print(f"Results saved to '{filename}'")
+
+
+# Main function to run the analysis
+def run_emotion_analysis(text):
+    df_chunks = process_chunks(text)
+    save_to_excel(df_chunks)
+
+
+# Run analysis on the selected text
+text = fathers_pov
+run_emotion_analysis(text)
