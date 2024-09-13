@@ -56,22 +56,30 @@ def save_to_excel(chunk_results):
     df.to_excel(excel_file, index=False)
     print(f"Results saved to {excel_file}")
 
-    all_chunk_probabilities = np.array([list(result.values())[1:] for result in chunk_results])
-
-    mean_probs = np.mean(all_chunk_probabilities, axis=0)
-    std_probs = np.std(all_chunk_probabilities, axis=0)
-
-    statistics_df = pd.DataFrame({
-        "Emotion": emotions,
-        "Mean": mean_probs,
-        "Standard Deviation": std_probs
-    })
+    statistics_df = calculate_summary_statistics(df)
 
     with pd.ExcelWriter(excel_file, mode="a", engine="openpyxl") as writer:
         statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
 
     print(f"Mean and Standard Deviation saved to the 'Statistics' sheet in {excel_file}")
 
+
+def calculate_summary_statistics(df_chunks):
+    summary_data = {
+        "Emotion": emotions,
+        "Mean Probability": [],
+        "Standard Deviation": []
+    }
+
+    for emotion in emotions:
+        mean_prob = df_chunks[emotion].mean()
+        std_prob = df_chunks[emotion].std()
+
+        summary_data["Mean Probability"].append(mean_prob)
+        summary_data["Standard Deviation"].append(std_prob)
+
+    df_summary = pd.DataFrame(summary_data)
+    return df_summary
 
 
 results_acc = []
