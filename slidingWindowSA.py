@@ -17,6 +17,15 @@ class SlidingWindowSA:
         ]
 
 
+    def change_model(self, model_name):
+        del self.model
+        del self.tokenizer
+        torch.cuda.empty_cache()
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+
+
     def analyze_text(self, text):
         chunks = sent_tokenize(text)
         chunk_data = {
