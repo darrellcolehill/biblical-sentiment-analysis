@@ -24,6 +24,7 @@ class SlidingWindowSA:
         del self.tokenizer
         torch.cuda.empty_cache()
         
+        self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
@@ -58,7 +59,7 @@ class SlidingWindowSA:
         return probabilities
 
 
-    def save_to_excel(self, df, filename="emotion_analysis_sentence_chunk.xlsx"):
+    def save_to_excel(self, df, filename="emotion_analysis_sliding_window.xlsx"):
 
         if not os.path.exists(f"./results/{self.model_name}"):
             os.makedirs(f"./results/{self.model_name}")
@@ -69,7 +70,7 @@ class SlidingWindowSA:
 
         with pd.ExcelWriter(f"./results/{self.model_name}/{filename}", mode="a", engine="openpyxl") as writer:
             statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
-        print(f"Results saved to '{filename}'")
+        print(f"Results saved to './results/{self.model_name}/{filename}'")
 
         
     def calculate_summary_statistics(self, df_chunks):

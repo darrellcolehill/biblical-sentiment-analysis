@@ -26,6 +26,7 @@ class SentenceChunkSA:
         del self.tokenizer
         torch.cuda.empty_cache()
         
+        self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
@@ -67,7 +68,8 @@ class SentenceChunkSA:
 
         with pd.ExcelWriter(f"./results/{self.model_name}/{filename}", mode="a", engine="openpyxl") as writer:
             statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
-        print(f"Results saved to '{filename}'")
+
+        print(f"Results saved to './results/{self.model_name}/{filename}'")
 
 
     def calculate_summary_statistics(self, df):
