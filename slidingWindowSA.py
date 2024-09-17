@@ -6,8 +6,7 @@ from nltk.tokenize import sent_tokenize
 
 class SlidingWindowSA:
 
-    def __init__(self):
-        model_name = "joeddav/distilbert-base-uncased-go-emotions-student"
+    def __init__(self, model_name = "joeddav/distilbert-base-uncased-go-emotions-student"):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.emotions = [

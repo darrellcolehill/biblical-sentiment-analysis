@@ -9,8 +9,7 @@ from narrative_story_1 import texts
 
 class SentenceChunkSA:
 
-    def __init__(self):
-        model_name = "joeddav/distilbert-base-uncased-go-emotions-student"
+    def __init__(self, model_name = "joeddav/distilbert-base-uncased-go-emotions-student"):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.emotions = [
@@ -77,6 +76,6 @@ class SentenceChunkSA:
 
 
 # Example Usage
-# analyzer = SentenceChunkSA()
-# df_chunks = analyzer.analyze_text(texts[0])
-# analyzer.save_to_excel(df_chunks)
+analyzer = SentenceChunkSA()
+df_chunks = analyzer.analyze_text(texts[0])
+analyzer.save_to_excel(df_chunks)
