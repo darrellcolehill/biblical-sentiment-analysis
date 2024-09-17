@@ -5,11 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 from nltk.tokenize import sent_tokenize
 import pandas as pd 
 from narrative_story_1 import texts
+import os
 
 
 class SentenceChunkSA:
 
     def __init__(self, model_name = "joeddav/distilbert-base-uncased-go-emotions-student"):
+        self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.emotions = [
@@ -55,11 +57,15 @@ class SentenceChunkSA:
 
 
     def save_to_excel(self, df, filename="emotion_analysis_sentence_chunk.xlsx"):
-        df.to_excel(filename, index=False)
+
+        if not os.path.exists(f"./results/{self.model_name}"):
+            os.makedirs(f"./results/{self.model_name}")
+
+        df.to_excel(f"./results/{self.model_name}/{filename}", index=False)
 
         statistics_df = self.calculate_summary_statistics(df)
 
-        with pd.ExcelWriter(filename, mode="a", engine="openpyxl") as writer:
+        with pd.ExcelWriter(f"./results/{self.model_name}/{filename}", mode="a", engine="openpyxl") as writer:
             statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
         print(f"Results saved to '{filename}'")
 
@@ -84,6 +90,6 @@ class SentenceChunkSA:
 
 
 # Example Usage
-analyzer = SentenceChunkSA()
-df_chunks = analyzer.analyze_text(texts[0])
-analyzer.save_to_excel(df_chunks)
+# analyzer = SentenceChunkSA()
+# df_chunks = analyzer.analyze_text(texts[0])
+# analyzer.save_to_excel(df_chunks)

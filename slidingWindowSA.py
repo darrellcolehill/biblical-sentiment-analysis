@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -7,6 +8,7 @@ from nltk.tokenize import sent_tokenize
 class SlidingWindowSA:
 
     def __init__(self, model_name = "joeddav/distilbert-base-uncased-go-emotions-student"):
+        self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.emotions = [
@@ -56,12 +58,17 @@ class SlidingWindowSA:
         return probabilities
 
 
-    def save_to_excel(self, df_chunks, filename="emotion_analysis_sliding_window.xlsx"):
-        df_summary = self.calculate_summary_statistics(df_chunks)
+    def save_to_excel(self, df, filename="emotion_analysis_sentence_chunk.xlsx"):
 
-        with pd.ExcelWriter(filename) as writer:
-            df_chunks.to_excel(writer, sheet_name="Chunks", index=False)
-            df_summary.to_excel(writer, sheet_name="Summary", index=False)
+        if not os.path.exists(f"./results/{self.model_name}"):
+            os.makedirs(f"./results/{self.model_name}")
+
+        df.to_excel(f"./results/{self.model_name}/{filename}", index=False)
+
+        statistics_df = self.calculate_summary_statistics(df)
+
+        with pd.ExcelWriter(f"./results/{self.model_name}/{filename}", mode="a", engine="openpyxl") as writer:
+            statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
         print(f"Results saved to '{filename}'")
 
         
