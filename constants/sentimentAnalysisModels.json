@@ -1,0 +1,8 @@
+{
+    "models": [
+        {"model": "joeddav/distilbert-base-uncased-go-emotions-student", "emotion_model": "goEmotions"}, 
+        {"model": "monologg/bert-base-cased-goemotions-original", "emotion_model": "goEmotions"}, 
+        {"model": "SamLowe/roberta-base-go_emotions", "emotion_model": "goEmotions"},
+        {"model": "j-hartmann/emotion-english-distilroberta-base", "emotion_model": "ekman"}
+    ]
+}
