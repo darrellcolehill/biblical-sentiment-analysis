@@ -16,7 +16,7 @@ class SentenceChunkSA:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
-        with open('emotionModels.json', 'r') as file:
+        with open('./constants/emotionModels.json', 'r') as file:
             self.all_emotion_models = json.load(file)
 
 
