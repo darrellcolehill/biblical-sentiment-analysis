@@ -5,7 +5,6 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from nltk.tokenize import sent_tokenize
 import pandas as pd 
-from narrative_story_1 import texts
 import os
 
 
