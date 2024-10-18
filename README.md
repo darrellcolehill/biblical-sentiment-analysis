@@ -46,3 +46,6 @@ Each LLM provides unique insights based on its architecture and training, allowi
 
 ## Results
 The results can be found in the "results" folder. 
+
+## Experiment Replication Video
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/cx9y_vY9CEA/0.jpg)](http://www.youtube.com/watch?v=cx9y_vY9CEA "Biblical Sentiment Analysis Video")
